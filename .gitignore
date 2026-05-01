@@ -1,0 +1,12 @@
+_build/
+.rebar3/
+*.beam
+*.so
+*.dylib
+*.dll
+ebin/
+priv/quickjs.so
+priv/quickjs.dylib
+priv/quickjs.dll
+rebar3.crashdump
+.DS_Store
