@@ -482,10 +482,66 @@ Contexts are managed as Erlang NIF resources with automatic cleanup:
 
 ## Benchmarks
 
-A bench harness lives in `bench/quickjs_bench.erl`. Numbers will be published once an initial run lands.
+Apple M4 Pro, Erlang/OTP 28, quickjs-ng v0.14.0, 1000 iterations per benchmark after a 100-iteration warmup.
+
+### Core operations
+
+| Benchmark | Ops/sec | Mean (ms) | P95 (ms) | P99 (ms) |
+|---|--:|--:|--:|--:|
+| eval_simple | 1,445 | 0.692 | 0.741 | 0.809 |
+| eval_complex | 1,412 | 0.708 | 0.756 | 0.810 |
+| eval_bindings_small (5 vars) | 1,445 | 0.692 | 0.757 | 0.816 |
+| eval_bindings_large (50 vars) | 1,279 | 0.782 | 0.846 | 0.939 |
+| call_no_args | 1,424 | 0.702 | 0.757 | 0.816 |
+| call_with_args (5 args) | 1,429 | 0.700 | 0.733 | 0.783 |
+| call_many_args (20 args) | 1,391 | 0.719 | 0.754 | 0.804 |
+| type_convert_simple | 1,450 | 0.689 | 0.710 | 0.739 |
+| type_convert_array (1000 elem) | 1,403 | 0.713 | 0.741 | 0.773 |
+| type_convert_nested | 1,388 | 0.721 | 0.781 | 0.864 |
+| context_create | 1,442 | 0.694 | 0.745 | 0.810 |
+| module_require_cached | 1,399 | 0.715 | 0.761 | 0.802 |
+
+### Erlang function registration
+
+| Benchmark | Ops/sec | Mean (ms) | P95 (ms) | P99 (ms) |
+|---|--:|--:|--:|--:|
+| register_function_simple | 1,402 | 0.713 | 0.752 | 0.845 |
+| register_function_complex_args | 1,373 | 0.728 | 0.773 | 1.180 |
+| register_function_nested (5 calls) | 1,350 | 0.741 | 0.790 | 0.854 |
+| register_function_many_calls (10) | 11,969 | 0.835 | 0.926 | 1.163 |
+
+### Event framework
+
+| Benchmark | Ops/sec | Mean (ms) | P95 (ms) | P99 (ms) |
+|---|--:|--:|--:|--:|
+| event_emit | 1,247 | 0.802 | 0.860 | 0.921 |
+| event_send | 1,424 | 0.702 | 0.738 | 0.786 |
+| console_log | 1,242 | 0.805 | 0.856 | 0.914 |
+
+### CBOR
+
+| Benchmark | Ops/sec | Mean (ms) | P95 (ms) | P99 (ms) |
+|---|--:|--:|--:|--:|
+| cbor_encode_simple | 1,353 | 0.739 | 0.783 | 0.837 |
+| cbor_encode_complex | 1,175 | 0.851 | 0.901 | 0.993 |
+| cbor_decode_simple | 1,187 | 0.843 | 1.029 | 1.100 |
+| cbor_roundtrip | 1,139 | 0.878 | 1.107 | 1.332 |
+
+The CBOR codec is a JS shim, not a native C path; it lags duktape's built-in CBOR by roughly 35% on this micro-bench. The other operations sit ~15-25% behind duktape on per-call latency in exchange for full ES2023 support.
+
+### Concurrency
+
+| Benchmark | Ops/sec | Mean (ms) | P95 (ms) | P99 (ms) |
+|---|--:|--:|--:|--:|
+| concurrent_same_context (10 procs) | 98,859 | 1.012 | 1.234 | 1.334 |
+| concurrent_many_contexts (10 procs) | 22,321 | 4.480 | 4.763 | 5.111 |
+
+Run benchmarks yourself:
 
 ```bash
-rebar3 as bench eunit --module=quickjs_bench
+./run_bench.sh                  # all
+./run_bench.sh eval_simple      # one
+./run_bench.sh --smoke          # quick validation
 ```
 
 ## Security Considerations
