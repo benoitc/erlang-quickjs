@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: OTP ${{ matrix.otp }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            otp: '26'
+          - os: ubuntu-latest
+            otp: '27'
+          - os: ubuntu-latest
+            otp: '28'
+          - os: macos-latest
+            otp: '26'
+          - os: macos-latest
+            otp: '27'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Erlang/OTP
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          rebar3-version: '3.24'
+
+      - name: Cache rebar3
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/rebar3
+            _build
+          key: ${{ runner.os }}-rebar3-${{ matrix.otp }}-${{ hashFiles('rebar.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-rebar3-${{ matrix.otp }}-
+
+      - name: Compile
+        run: rebar3 compile
+
+      - name: Run tests
+        run: rebar3 eunit
+
+      - name: Run dialyzer
+        run: rebar3 dialyzer
+        continue-on-error: true
+
+  freebsd:
+    name: FreeBSD
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Test on FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          prepare: |
+            pkg install -y erlang rebar3 cmake git
+          run: |
+            rebar3 compile
+            rebar3 eunit
+
+  docs:
+    name: Build docs
+    runs-on: ubuntu-latest
+    needs: [test, freebsd]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Erlang/OTP
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: '27'
+          rebar3-version: '3.24'
+
+      - name: Build docs
+        run: rebar3 ex_doc
