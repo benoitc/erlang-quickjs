@@ -138,6 +138,15 @@ get_ctx(ErlNifEnv *env, ERL_NIF_TERM term, quickjs_ctx_t **res)
     return enif_get_resource(env, term, quickjs_ctx_resource, (void **)res);
 }
 
+/* QuickJS captures the C stack base when JS_NewRuntime runs. NIF calls dispatch
+ * across BEAM scheduler threads, each with its own stack, so the captured base
+ * is wrong on every call after the first. Refresh it on entry. */
+static inline void
+refresh_stack_top(quickjs_ctx_t *res)
+{
+    if (res && res->rt) JS_UpdateStackTop(res->rt);
+}
+
 static ERL_NIF_TERM
 make_error(ErlNifEnv *env, ERL_NIF_TERM reason)
 {
@@ -718,6 +727,7 @@ nif_destroy_context(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return make_error(env, atom_badarg);
     }
     enif_mutex_lock(res->lock);
+    refresh_stack_top(res);
     if (!res->destroyed) {
         if (res->ctx) {
             trampoline_clear_results(res);
@@ -759,6 +769,7 @@ nif_eval(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     enif_mutex_lock(res->lock);
+    refresh_stack_top(res);
     if (res->destroyed) {
         enif_mutex_unlock(res->lock);
         enif_free(code);
@@ -832,6 +843,7 @@ nif_eval_bindings(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     enif_mutex_lock(res->lock);
+    refresh_stack_top(res);
     if (res->destroyed) {
         enif_mutex_unlock(res->lock);
         enif_free(code);
@@ -917,6 +929,7 @@ nif_call(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     enif_mutex_lock(res->lock);
+    refresh_stack_top(res);
     if (res->destroyed) {
         enif_mutex_unlock(res->lock);
         if (fname_owned) enif_free(fname);
@@ -1036,6 +1049,7 @@ nif_register_erlang_function(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     }
 
     enif_mutex_lock(res->lock);
+    refresh_stack_top(res);
     if (res->destroyed) {
         enif_mutex_unlock(res->lock);
         if (owned) enif_free(name);
@@ -1093,6 +1107,7 @@ nif_call_complete(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return make_error(env, atom_invalid_context);
     }
     enif_mutex_lock(res->lock);
+    refresh_stack_top(res);
     if (res->destroyed) {
         enif_mutex_unlock(res->lock);
         return make_error(env, atom_invalid_context);
@@ -1118,6 +1133,7 @@ nif_eval_resume(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return make_error(env, atom_invalid_context);
     }
     enif_mutex_lock(res->lock);
+    refresh_stack_top(res);
     if (res->destroyed) {
         enif_mutex_unlock(res->lock);
         return make_error(env, atom_invalid_context);
@@ -1725,6 +1741,7 @@ nif_register_module(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     enif_mutex_lock(res->lock);
+    refresh_stack_top(res);
     if (res->destroyed) {
         enif_mutex_unlock(res->lock);
         enif_free(id);
@@ -1764,6 +1781,7 @@ nif_require(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     enif_mutex_lock(res->lock);
+    refresh_stack_top(res);
     if (res->destroyed) {
         enif_mutex_unlock(res->lock);
         enif_free(id);
@@ -1820,6 +1838,7 @@ nif_send(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     enif_mutex_lock(res->lock);
+    refresh_stack_top(res);
     if (res->destroyed) {
         enif_mutex_unlock(res->lock);
         if (owned) enif_free(name);
@@ -1872,6 +1891,7 @@ nif_get_memory_stats(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return make_error(env, atom_invalid_context);
     }
     enif_mutex_lock(res->lock);
+    refresh_stack_top(res);
     if (res->destroyed) {
         enif_mutex_unlock(res->lock);
         return make_error(env, atom_invalid_context);
@@ -1898,6 +1918,7 @@ nif_gc(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return make_error(env, atom_invalid_context);
     }
     enif_mutex_lock(res->lock);
+    refresh_stack_top(res);
     if (res->destroyed) {
         enif_mutex_unlock(res->lock);
         return make_error(env, atom_invalid_context);
@@ -1917,6 +1938,7 @@ nif_cbor_encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return make_error(env, atom_invalid_context);
     }
     enif_mutex_lock(res->lock);
+    refresh_stack_top(res);
     if (res->destroyed) {
         enif_mutex_unlock(res->lock);
         return make_error(env, atom_invalid_context);
@@ -1969,6 +1991,7 @@ nif_cbor_decode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return make_error(env, atom_badarg);
     }
     enif_mutex_lock(res->lock);
+    refresh_stack_top(res);
     if (res->destroyed) {
         enif_mutex_unlock(res->lock);
         return make_error(env, atom_invalid_context);
