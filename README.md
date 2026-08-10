@@ -5,7 +5,7 @@
 
 QuickJS JavaScript engine for Erlang.
 
-This library embeds the [QuickJS-NG](https://github.com/quickjs-ng/quickjs) JavaScript engine (v0.14.0) as an Erlang NIF, allowing you to evaluate JavaScript code directly from Erlang.
+This library embeds the [QuickJS-NG](https://github.com/quickjs-ng/quickjs) JavaScript engine (v0.16.1) as an Erlang NIF, allowing you to evaluate JavaScript code directly from Erlang.
 
 ## Features
 
@@ -482,59 +482,59 @@ Contexts are managed as Erlang NIF resources with automatic cleanup:
 
 ## Benchmarks
 
-Apple M4 Pro, Erlang/OTP 28, quickjs-ng v0.14.0, 1000 iterations per benchmark after a 100-iteration warmup.
+Apple M4 Pro, Erlang/OTP 29, quickjs-ng v0.16.1, 1000 iterations per benchmark after a 100-iteration warmup.
 
 ### Core operations
 
 | Benchmark | Ops/sec | Mean (ms) | P95 (ms) | P99 (ms) |
 |---|--:|--:|--:|--:|
-| eval_simple | 1,445 | 0.692 | 0.741 | 0.809 |
-| eval_complex | 1,412 | 0.708 | 0.756 | 0.810 |
-| eval_bindings_small (5 vars) | 1,445 | 0.692 | 0.757 | 0.816 |
-| eval_bindings_large (50 vars) | 1,279 | 0.782 | 0.846 | 0.939 |
-| call_no_args | 1,424 | 0.702 | 0.757 | 0.816 |
-| call_with_args (5 args) | 1,429 | 0.700 | 0.733 | 0.783 |
-| call_many_args (20 args) | 1,391 | 0.719 | 0.754 | 0.804 |
-| type_convert_simple | 1,450 | 0.689 | 0.710 | 0.739 |
-| type_convert_array (1000 elem) | 1,403 | 0.713 | 0.741 | 0.773 |
-| type_convert_nested | 1,388 | 0.721 | 0.781 | 0.864 |
-| context_create | 1,442 | 0.694 | 0.745 | 0.810 |
-| module_require_cached | 1,399 | 0.715 | 0.761 | 0.802 |
+| eval_simple | 1,197 | 0.835 | 0.909 | 0.967 |
+| eval_complex | 1,181 | 0.847 | 0.914 | 0.978 |
+| eval_bindings_small (5 vars) | 1,198 | 0.835 | 0.923 | 0.976 |
+| eval_bindings_large (50 vars) | 1,078 | 0.928 | 1.007 | 1.086 |
+| call_no_args | 1,185 | 0.844 | 0.935 | 0.988 |
+| call_with_args (5 args) | 1,190 | 0.840 | 0.902 | 0.959 |
+| call_many_args (20 args) | 1,159 | 0.863 | 0.927 | 0.995 |
+| type_convert_simple | 1,202 | 0.832 | 0.900 | 0.951 |
+| type_convert_array (1000 elem) | 1,153 | 0.867 | 0.953 | 1.011 |
+| type_convert_nested | 1,174 | 0.852 | 0.909 | 0.976 |
+| context_create | 1,209 | 0.827 | 0.890 | 0.973 |
+| module_require_cached | 1,159 | 0.863 | 0.944 | 1.002 |
 
 ### Erlang function registration
 
 | Benchmark | Ops/sec | Mean (ms) | P95 (ms) | P99 (ms) |
 |---|--:|--:|--:|--:|
-| register_function_simple | 1,402 | 0.713 | 0.752 | 0.845 |
-| register_function_complex_args | 1,373 | 0.728 | 0.773 | 1.180 |
-| register_function_nested (5 calls) | 1,350 | 0.741 | 0.790 | 0.854 |
-| register_function_many_calls (10) | 11,969 | 0.835 | 0.926 | 1.163 |
+| register_function_simple | 1,197 | 0.835 | 0.881 | 0.921 |
+| register_function_complex_args | 1,148 | 0.871 | 0.932 | 1.375 |
+| register_function_nested (5 calls) | 1,140 | 0.877 | 0.933 | 1.025 |
+| register_function_many_calls (10) | 10,245 | 0.976 | 1.037 | 1.162 |
 
 ### Event framework
 
 | Benchmark | Ops/sec | Mean (ms) | P95 (ms) | P99 (ms) |
 |---|--:|--:|--:|--:|
-| event_emit | 1,247 | 0.802 | 0.860 | 0.921 |
-| event_send | 1,424 | 0.702 | 0.738 | 0.786 |
-| console_log | 1,242 | 0.805 | 0.856 | 0.914 |
+| event_emit | 1,058 | 0.945 | 1.013 | 1.064 |
+| event_send | 1,186 | 0.843 | 0.905 | 0.955 |
+| console_log | 1,037 | 0.964 | 1.086 | 1.191 |
 
 ### CBOR
 
 | Benchmark | Ops/sec | Mean (ms) | P95 (ms) | P99 (ms) |
 |---|--:|--:|--:|--:|
-| cbor_encode_simple | 1,353 | 0.739 | 0.783 | 0.837 |
-| cbor_encode_complex | 1,175 | 0.851 | 0.901 | 0.993 |
-| cbor_decode_simple | 1,187 | 0.843 | 1.029 | 1.100 |
-| cbor_roundtrip | 1,139 | 0.878 | 1.107 | 1.332 |
+| cbor_encode_simple | 1,143 | 0.875 | 0.936 | 0.984 |
+| cbor_encode_complex | 1,008 | 0.992 | 1.061 | 1.125 |
+| cbor_decode_simple | 1,102 | 0.908 | 0.969 | 1.019 |
+| cbor_roundtrip | 1,044 | 0.958 | 1.025 | 1.116 |
 
-The CBOR codec is a JS shim, not a native C path; it lags duktape's built-in CBOR by roughly 35% on this micro-bench. The other operations sit ~15-25% behind duktape on per-call latency in exchange for full ES2023 support.
+The CBOR codec is a JS shim, not a native C path, so it lags duktape's built-in CBOR on this micro-bench. The other operations also trade some per-call latency against duktape in exchange for full ES2023 support. The duktape comparison was last measured against quickjs-ng v0.14.0 and has not been re-run for v0.16.1.
 
 ### Concurrency
 
 | Benchmark | Ops/sec | Mean (ms) | P95 (ms) | P99 (ms) |
 |---|--:|--:|--:|--:|
-| concurrent_same_context (10 procs) | 98,859 | 1.012 | 1.234 | 1.334 |
-| concurrent_many_contexts (10 procs) | 22,321 | 4.480 | 4.763 | 5.111 |
+| concurrent_same_context (10 procs) | 83,004 | 1.205 | 1.460 | 1.574 |
+| concurrent_many_contexts (10 procs) | 19,219 | 5.203 | 5.485 | 5.817 |
 
 Run benchmarks yourself:
 
