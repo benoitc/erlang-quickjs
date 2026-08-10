@@ -1,6 +1,13 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.2.0 (2026-08-10)
+
+- Update the embedded engine to [QuickJS-NG](https://github.com/quickjs-ng/quickjs) v0.16.1 (from v0.14.0). No API changes.
+- Build QuickJS with optimization. `c_src/CMakeLists.txt` never set `CMAKE_BUILD_TYPE`, so CMake passed no `-O` flag and every prior release shipped an unoptimized engine. Upstream defaults to `Release`; this now does the same. Benchmarks are ~3.4x faster (`eval_simple` 1,197 to 4,133 ops/sec).
+- Stop the compile hook from resetting the `quickjs-ng` submodule. The unconditional `git submodule update` ran on every compile and discarded a deliberate version bump before it could be staged. It now only populates the submodule when missing, which also lets a hex tarball build without git.
+- README benchmark tables re-measured. They track context creation and teardown rather than JavaScript execution, since each iteration builds and destroys a context; the README now says so.
+
+## 0.1.0 (2026-05-01)
 
 Initial release. API-compatible replacement for `erlang-duktape`, backed by [QuickJS-NG](https://github.com/quickjs-ng/quickjs) v0.16.1.
 
