@@ -2,7 +2,7 @@
 
 ## 0.1.0 (unreleased)
 
-Initial release. API-compatible replacement for `erlang-duktape`, backed by [QuickJS-NG](https://github.com/quickjs-ng/quickjs) v0.14.0.
+Initial release. API-compatible replacement for `erlang-duktape`, backed by [QuickJS-NG](https://github.com/quickjs-ng/quickjs) v0.16.1.
 
 - Multiple isolated JavaScript contexts.
 - `eval/2,3,4` and `call/2,3,4` with bindings, arguments, and execution timeouts.
