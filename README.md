@@ -482,59 +482,61 @@ Contexts are managed as Erlang NIF resources with automatic cleanup:
 
 ## Benchmarks
 
-Apple M4 Pro, Erlang/OTP 29, quickjs-ng v0.16.1, 1000 iterations per benchmark after a 100-iteration warmup.
+Apple M4 Pro, Erlang/OTP 29, quickjs-ng v0.16.1, release build, 1000 iterations per benchmark after a 100-iteration warmup.
+
+Each iteration creates a context, does the work, and destroys it, so these figures are dominated by context lifecycle rather than by JavaScript execution. Reuse a context and per-call cost drops by roughly an order of magnitude.
 
 ### Core operations
 
 | Benchmark | Ops/sec | Mean (ms) | P95 (ms) | P99 (ms) |
 |---|--:|--:|--:|--:|
-| eval_simple | 1,197 | 0.835 | 0.909 | 0.967 |
-| eval_complex | 1,181 | 0.847 | 0.914 | 0.978 |
-| eval_bindings_small (5 vars) | 1,198 | 0.835 | 0.923 | 0.976 |
-| eval_bindings_large (50 vars) | 1,078 | 0.928 | 1.007 | 1.086 |
-| call_no_args | 1,185 | 0.844 | 0.935 | 0.988 |
-| call_with_args (5 args) | 1,190 | 0.840 | 0.902 | 0.959 |
-| call_many_args (20 args) | 1,159 | 0.863 | 0.927 | 0.995 |
-| type_convert_simple | 1,202 | 0.832 | 0.900 | 0.951 |
-| type_convert_array (1000 elem) | 1,153 | 0.867 | 0.953 | 1.011 |
-| type_convert_nested | 1,174 | 0.852 | 0.909 | 0.976 |
-| context_create | 1,209 | 0.827 | 0.890 | 0.973 |
-| module_require_cached | 1,159 | 0.863 | 0.944 | 1.002 |
+| eval_simple | 4,133 | 0.242 | 0.301 | 0.371 |
+| eval_complex | 4,076 | 0.245 | 0.304 | 0.356 |
+| eval_bindings_small (5 vars) | 4,201 | 0.238 | 0.281 | 0.336 |
+| eval_bindings_large (50 vars) | 3,363 | 0.297 | 0.364 | 0.422 |
+| call_no_args | 4,122 | 0.243 | 0.300 | 0.353 |
+| call_with_args (5 args) | 4,092 | 0.244 | 0.303 | 0.363 |
+| call_many_args (20 args) | 3,796 | 0.263 | 0.336 | 0.398 |
+| type_convert_simple | 4,182 | 0.239 | 0.284 | 0.348 |
+| type_convert_array (1000 elem) | 3,964 | 0.252 | 0.300 | 0.357 |
+| type_convert_nested | 4,054 | 0.247 | 0.293 | 0.353 |
+| context_create | 4,108 | 0.243 | 0.297 | 0.365 |
+| module_require_cached | 3,999 | 0.250 | 0.305 | 0.370 |
 
 ### Erlang function registration
 
 | Benchmark | Ops/sec | Mean (ms) | P95 (ms) | P99 (ms) |
 |---|--:|--:|--:|--:|
-| register_function_simple | 1,197 | 0.835 | 0.881 | 0.921 |
-| register_function_complex_args | 1,148 | 0.871 | 0.932 | 1.375 |
-| register_function_nested (5 calls) | 1,140 | 0.877 | 0.933 | 1.025 |
-| register_function_many_calls (10) | 10,245 | 0.976 | 1.037 | 1.162 |
+| register_function_simple | 4,112 | 0.243 | 0.288 | 0.378 |
+| register_function_complex_args | 3,816 | 0.262 | 0.327 | 0.784 |
+| register_function_nested (5 calls) | 3,791 | 0.264 | 0.326 | 0.408 |
+| register_function_many_calls (10) | 34,193 | 0.292 | 0.370 | 0.453 |
 
 ### Event framework
 
 | Benchmark | Ops/sec | Mean (ms) | P95 (ms) | P99 (ms) |
 |---|--:|--:|--:|--:|
-| event_emit | 1,058 | 0.945 | 1.013 | 1.064 |
-| event_send | 1,186 | 0.843 | 0.905 | 0.955 |
-| console_log | 1,037 | 0.964 | 1.086 | 1.191 |
+| event_emit | 2,619 | 0.382 | 0.498 | 0.608 |
+| event_send | 4,078 | 0.245 | 0.308 | 0.365 |
+| console_log | 2,672 | 0.374 | 0.489 | 0.601 |
 
 ### CBOR
 
 | Benchmark | Ops/sec | Mean (ms) | P95 (ms) | P99 (ms) |
 |---|--:|--:|--:|--:|
-| cbor_encode_simple | 1,143 | 0.875 | 0.936 | 0.984 |
-| cbor_encode_complex | 1,008 | 0.992 | 1.061 | 1.125 |
-| cbor_decode_simple | 1,102 | 0.908 | 0.969 | 1.019 |
-| cbor_roundtrip | 1,044 | 0.958 | 1.025 | 1.116 |
+| cbor_encode_simple | 3,703 | 0.270 | 0.328 | 0.378 |
+| cbor_encode_complex | 3,306 | 0.302 | 0.351 | 0.387 |
+| cbor_decode_simple | 3,513 | 0.285 | 0.337 | 0.391 |
+| cbor_roundtrip | 3,369 | 0.297 | 0.357 | 0.431 |
 
-The CBOR codec is a JS shim, not a native C path, so it lags duktape's built-in CBOR on this micro-bench. The other operations also trade some per-call latency against duktape in exchange for full ES2023 support. The duktape comparison was last measured against quickjs-ng v0.14.0 and has not been re-run for v0.16.1.
+The CBOR codec is a JS shim rather than a native C path, so it stays the slowest of these operations. The duktape comparison that used to appear here was measured before the engine was built with optimization and is no longer meaningful; it has not been re-run.
 
 ### Concurrency
 
 | Benchmark | Ops/sec | Mean (ms) | P95 (ms) | P99 (ms) |
 |---|--:|--:|--:|--:|
-| concurrent_same_context (10 procs) | 83,004 | 1.205 | 1.460 | 1.574 |
-| concurrent_many_contexts (10 procs) | 19,219 | 5.203 | 5.485 | 5.817 |
+| concurrent_same_context (10 procs) | 149,004 | 0.671 | 0.995 | 1.108 |
+| concurrent_many_contexts (10 procs) | 42,368 | 2.360 | 2.671 | 2.852 |
 
 Run benchmarks yourself:
 
