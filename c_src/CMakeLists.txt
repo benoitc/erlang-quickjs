@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
 project(quickjs_nif C)
 
+# Default to an optimized build, as upstream quickjs-ng does. Without this
+# CMake passes no -O flag at all and the engine is built unoptimized, which
+# costs roughly 4x on context creation and hurts newer quickjs-ng releases
+# disproportionately (they lean harder on the inliner).
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
 # Output directory
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/../priv)
 
