@@ -89,6 +89,9 @@ Create a new JavaScript context with options.
 
 Options:
 - `handler => pid()`: Process to receive events from JavaScript. The handler will receive messages of the form `{quickjs, Type, Data}` where Type is a binary (e.g., `<<"custom">>`) or atom (for log events: `log`) and Data is the event payload.
+- `memory_limit => non_neg_integer()`: Cap the runtime's total heap, in bytes. quickjs-ng enforces this itself before every allocation; a script that exceeds it gets a normal, catchable `{error, {js_error, <<"InternalError: out of memory">>}}` instead of growing without bound. `eval/2,3,4`'s own timeout only bounds wall-clock time, not memory — an allocation-heavy loop can allocate a lot in a short time before a timeout would ever fire, so set this whenever you run untrusted code.
+- `max_stack_size => non_neg_integer()`: Cap JS call-stack depth, in bytes. **Set this whenever you run untrusted code** — without it, a simple unbounded-recursion script (`function f(){return 1+f();} f();`) can crash the whole VM with a SIGSEGV rather than raising a catchable error, because quickjs-ng captures its stack-top reference per OS thread and a NIF call can land on a different scheduler thread each time (see `refresh_stack_top` in `c_src/quickjs_nif.c`); a small, explicit limit is what makes the built-in stack-depth check actually fire before the real C stack does. In testing, values below ~256KB started rejecting ordinary, shallow recursion as false positives, and 1MB was not small enough to reliably avoid the SIGSEGV — 512KB is a reasonable starting point, but validate against your own workload.
+- `gc_threshold => non_neg_integer()`: Bytes of new allocation to accumulate before an automatic GC pass runs.
 
 ```erlang
 {ok, Ctx} = quickjs:new_context(#{handler => self()}),
@@ -97,6 +100,14 @@ receive
     {quickjs, log, #{level := info, message := <<"hello">>}} ->
         io:format("Got log message~n")
 end.
+
+%% Untrusted code: always set both of these.
+{ok, Ctx2} = quickjs:new_context(#{memory_limit => 32 * 1024 * 1024,
+                                   max_stack_size => 512 * 1024}),
+{error, {js_error, <<"InternalError: out of memory">>}} =
+    quickjs:eval(Ctx2, <<"let a=[]; while(true){ a.push(new Array(100000).fill(1)); }">>, 5000),
+{error, {js_error, <<"RangeError: Maximum call stack size exceeded">>}} =
+    quickjs:eval(Ctx2, <<"function f(){return 1+f();} f();">>, 5000).
 ```
 
 #### `destroy_context(Ctx) -> ok | {error, term()}`

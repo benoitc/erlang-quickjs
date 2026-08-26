@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- `new_context/1` gained `memory_limit`, `max_stack_size`, and `gc_threshold`
+  options, wrapping `JS_SetMemoryLimit`/`JS_SetMaxStackSize`/`JS_SetGCThreshold`.
+  Set `memory_limit` and `max_stack_size` whenever running untrusted code:
+  without them, an allocation-heavy loop can grow the heap unbounded past
+  what `eval/2,3,4`'s own timeout would catch in time, and a plain unbounded-
+  recursion script can SIGSEGV the whole VM rather than raising a catchable
+  error (quickjs-ng's stack-depth check needs an explicit, conservatively
+  small limit to fire before the real C stack does, since a NIF call can
+  land on a different BEAM scheduler thread — and therefore a different
+  actual stack — each time). See the README for tested-safe starting values.
+
 ## 0.2.0 (2026-08-10)
 
 - Update the embedded engine to [QuickJS-NG](https://github.com/quickjs-ng/quickjs) v0.16.1 (from v0.14.0). No API changes.

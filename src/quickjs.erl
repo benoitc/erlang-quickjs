@@ -36,7 +36,10 @@
 
 -opaque context() :: reference().
 
--type context_opts() :: #{handler => pid()}.
+-type context_opts() :: #{handler => pid(),
+                          memory_limit => non_neg_integer(),
+                          max_stack_size => non_neg_integer(),
+                          gc_threshold => non_neg_integer()}.
 
 -type js_value() :: integer()
                   | float()
@@ -94,6 +97,22 @@ info() ->
 new_context() ->
     nif_new_context().
 
+%% @doc Create a context with options.
+%%
+%% `memory_limit' (bytes) bounds the runtime's total heap: quickjs-ng
+%% enforces this itself (checked against its own internal allocation
+%% accounting before every malloc/realloc, independent of this NIF's own
+%% metrics allocator), so an over-limit script raises a normal, catchable
+%% JS exception rather than growing unbounded — `eval/2,3,4''s own
+%% `Timeout' does not otherwise bound memory at all, only wall-clock time,
+%% and an allocation-heavy loop can allocate a lot in a short time before a
+%% timeout would ever fire. `max_stack_size' (bytes) bounds JS call-stack
+%% depth (a runaway recursive script raises `RangeError: stack overflow'
+%% instead of growing unbounded). `gc_threshold' (bytes) tunes how much new
+%% allocation accumulates before an automatic GC pass runs. All three are
+%% one-shot runtime settings applied once at creation (JS_SetMemoryLimit /
+%% JS_SetMaxStackSize / JS_SetGCThreshold each take the JSRuntime, not a
+%% per-eval value) — there is no separate setter to change them later.
 -spec new_context(context_opts()) -> {ok, context()} | {error, term()}.
 new_context(Opts) when is_map(Opts) ->
     nif_new_context_opts(Opts).
