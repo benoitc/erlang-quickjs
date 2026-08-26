@@ -715,6 +715,36 @@ nif_new_context_opts(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
             res->handler_enabled = 1;
         }
     }
+    /* Runtime limits: JS_SetMemoryLimit/JS_SetMaxStackSize/JS_SetGCThreshold
+     * all take the JSRuntime*, so these apply once here rather than per-eval.
+     * quickjs-ng enforces the memory limit itself (js_malloc_rt/js_realloc_rt
+     * in quickjs.c check rt->malloc_state.malloc_size against
+     * rt->malloc_state.malloc_limit *before* ever calling this NIF's own
+     * QJS_MALLOC_FUNCS), independent of and layered on top of this NIF's own
+     * metrics-only allocator — exceeding it raises a normal catchable JS
+     * exception (out of memory), the same path any other runtime JS error
+     * already takes back to {error, {js_error, ...}}, not a crash. Silently
+     * skipped (like `handler` above) if the value isn't an integer, rather
+     * than a hard badarg — consistent with this function's existing
+     * leniency for every other option key.
+     */
+    ERL_NIF_TERM limit_val;
+    ErlNifUInt64 limit_u64;
+    if (enif_get_map_value(env, argv[0], enif_make_atom(env, "memory_limit"), &limit_val)) {
+        if (enif_get_uint64(env, limit_val, &limit_u64)) {
+            JS_SetMemoryLimit(res->rt, (size_t)limit_u64);
+        }
+    }
+    if (enif_get_map_value(env, argv[0], enif_make_atom(env, "max_stack_size"), &limit_val)) {
+        if (enif_get_uint64(env, limit_val, &limit_u64)) {
+            JS_SetMaxStackSize(res->rt, (size_t)limit_u64);
+        }
+    }
+    if (enif_get_map_value(env, argv[0], enif_make_atom(env, "gc_threshold"), &limit_val)) {
+        if (enif_get_uint64(env, limit_val, &limit_u64)) {
+            JS_SetGCThreshold(res->rt, (size_t)limit_u64);
+        }
+    }
     return ret;
 }
 
